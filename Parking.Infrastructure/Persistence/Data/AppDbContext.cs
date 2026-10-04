@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Parking.Application.Interfaces;
 using Parking.Domain.Entities;
 using Parking.Infrastructure.Persistence.Configurations;
 using ParkingBooking.Domain.Entities;
