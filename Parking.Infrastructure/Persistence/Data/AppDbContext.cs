@@ -26,14 +26,15 @@ namespace Parking.Infrastructure.Persistence.Data
         public DbSet<ParkingLot> ParkingLots => Set<ParkingLot>();
         public DbSet<ParkingSpot> ParkingSpots => Set<ParkingSpot>();
         public DbSet<Booking> Bookings => Set<Booking>();
-
+        public DbSet<User> Users => Set<User>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfiguration(new ParkingSpotConfiguration());
+            modelBuilder.ApplyConfiguration(new ParkingLotConfiguration()); 
             modelBuilder.ApplyConfiguration(new ParkingSpotConfiguration());
             modelBuilder.ApplyConfiguration(new BookingConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
