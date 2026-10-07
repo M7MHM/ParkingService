@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Parking.Application.Interfaces;
 using Parking.Infrastructure.Persistence.Data;
 using Parking.Infrastructure.Persistence.Repositories;
+using Parking.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,10 +29,15 @@ namespace Parking.Infrastructure
 
             services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
             services.AddScoped<IParkingLotRepository, ParkingLotRepository>();
+            services.AddScoped<IParkingSpotRepository, ParkingSpotRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddTransient<IEmailService, FakeEmailService>();
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
             return services;
         }

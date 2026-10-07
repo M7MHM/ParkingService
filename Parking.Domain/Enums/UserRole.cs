@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Parking.Domain.Enums
 {
-    internal class UserRole
+    public enum UserRole
     {
+        Customer = 0,
+        Admin = 1
     }
 }
