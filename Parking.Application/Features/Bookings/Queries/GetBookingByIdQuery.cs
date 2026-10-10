@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Parking.Application.Interfaces;
+using Parking.Domain.Entities;
 using ParkingBooking.Domain.Enums;
 using ParkingBooking.Domain.ValueObjects;
 using System;
@@ -8,9 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using BookingEntity = Parking.Domain.Entities.Booking;
-
-namespace Parking.Application.Features.Booking.Queries
+namespace Parking.Application.Features.Bookings.Queries
 {
     public record GetBookingByIdQuery(Guid Id) : IRequest<BookingResponse?>;
     public record BookingResponse(
@@ -26,8 +25,8 @@ namespace Parking.Application.Features.Booking.Queries
     );
     public class GetBookingByIdQueryHandler : IRequestHandler<GetBookingByIdQuery, BookingResponse?>
     {
-        private readonly IRepository<BookingEntity> _bookingRepository;
-        public GetBookingByIdQueryHandler(IRepository<BookingEntity> bookingRepository)
+        private readonly IRepository<Booking> _bookingRepository;
+        public GetBookingByIdQueryHandler(IRepository<Booking> bookingRepository)
         {
             _bookingRepository = bookingRepository;
         }

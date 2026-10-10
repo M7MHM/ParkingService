@@ -34,6 +34,12 @@ namespace Parking.Infrastructure.Persistence.Configurations
                 emailBuilder.HasIndex(e => e.Value)
                     .IsUnique();
             });
+
+            builder.Property(u => u.Role)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.HasQueryFilter(u => !u.IsDeleted);
         }
     }
 }

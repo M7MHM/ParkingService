@@ -13,15 +13,17 @@ namespace Parking.Infrastructure.Services
     {
         private const int CurrentIterations = 600_000;
         private const int MinimumAcceptedIterations = 100_000;
-        private const int MaximumAcceptedIterations = 2_000_000; 
+        private const int MaximumAcceptedIterations = 2_000_000;
         private const int SaltSize = 16;
         private const int HashSize = 32;
         private const int MinimumPasswordLength = 15;
         private const int MaximumPasswordLength = 128;
-
         public string Hash(string password)
         {
             ArgumentNullException.ThrowIfNull(password);
+
+            password = password.Normalize(NormalizationForm.FormC); 
+
             ValidateNewPasswordLength(password);
 
             var salt = RandomNumberGenerator.GetBytes(SaltSize);
@@ -42,6 +44,8 @@ namespace Parking.Infrastructure.Services
         {
             if (password is null || string.IsNullOrEmpty(hash))
                 return false;
+
+            password = password.Normalize(NormalizationForm.FormC); 
 
             if (CountUnicodeCodePoints(password) > MaximumPasswordLength)
                 return false;
@@ -109,7 +113,7 @@ namespace Parking.Infrastructure.Services
             {
                 if (char.IsHighSurrogate(s[i]))
                 {
-                    i++; 
+                    i++;
                 }
                 count++;
             }

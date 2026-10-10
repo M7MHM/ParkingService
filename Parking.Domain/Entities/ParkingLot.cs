@@ -39,6 +39,12 @@ public class ParkingLot : BaseEntity
         if (hourlyRate.Amount < 0)
             throw new ArgumentException("Hourly rate cannot be negative.", nameof(hourlyRate));
 
+        if (openingTime < TimeSpan.Zero || openingTime >= TimeSpan.FromHours(24))
+            throw new ArgumentOutOfRangeException(nameof(openingTime));
+
+        if (closingTime <= openingTime || closingTime > TimeSpan.FromHours(24))
+            throw new ArgumentOutOfRangeException(nameof(closingTime));
+
         Name = name;
         Description = description;
         Location = location;

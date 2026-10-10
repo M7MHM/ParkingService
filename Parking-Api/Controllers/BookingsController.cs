@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Parking.Application.Features.Booking.Commands;
-using Parking.Application.Features.Booking.Queries;
+using Parking.Application.Features.Bookings.Commands;
+using Parking.Application.Features.Bookings.Queries;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

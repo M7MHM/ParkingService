@@ -22,10 +22,10 @@ namespace Parking.Infrastructure
             var connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? "Data Source=ParkingBooking.db";
 
+            services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(connectionString));
-
-            services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
             services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
             services.AddScoped<IParkingLotRepository, ParkingLotRepository>();

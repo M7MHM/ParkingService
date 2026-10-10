@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Parking.Application.Features.Parking.Commands
+namespace Parking.Application.Features.Parkings.Commands
 {
     public record AddSpotCommand(
         Guid ParkingLotId,

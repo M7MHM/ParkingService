@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Parking.Application.Features.Parking.Commands;
-using Parking.Application.Features.Parking.Queries;
+using Parking.Application.Features.Parkings.Commands;
+using Parking.Application.Features.Parkings.Queries;
 using ParkingBooking.Domain.Enums;
 using ParkingBooking.Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;

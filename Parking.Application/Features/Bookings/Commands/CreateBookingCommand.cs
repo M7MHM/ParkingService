@@ -1,5 +1,7 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Parking.Application.Interfaces;
+using Parking.Domain.Entities;
 using ParkingBooking.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -7,9 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using BookingEntity = Parking.Domain.Entities.Booking;
 
-namespace Parking.Application.Features.Booking.Commands
+namespace Parking.Application.Features.Bookings.Commands
 {
     public record CreateBookingCommand(
            Guid ParkingLotId,
@@ -23,12 +24,12 @@ namespace Parking.Application.Features.Booking.Commands
     public class CreateBookingCommandHandler : IRequestHandler<CreateBookingCommand, Guid>
     {
         private readonly IParkingLotRepository _lotRepository;
-        private readonly IRepository<BookingEntity> _bookingRepository;
+        private readonly IRepository<Booking> _bookingRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public CreateBookingCommandHandler(
             IParkingLotRepository lotRepository,
-            IRepository<BookingEntity> bookingRepository,
+            IRepository<Booking> bookingRepository,
             IUnitOfWork unitOfWork)
         {
             _lotRepository = lotRepository;
@@ -49,7 +50,7 @@ namespace Parking.Application.Features.Booking.Commands
                 ?? throw new InvalidOperationException("The parking spot does not exist in this lot.");
 
             var totalPrice = spot.CalculatePrice(period.WholeHoursCeiling());
-            var booking = new BookingEntity(
+            var booking = new Booking(
                 request.ParkingSpotId,
                 request.UserId,
                 period,
@@ -65,6 +66,26 @@ namespace Parking.Application.Features.Booking.Commands
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return booking.Id;
+        }
+    }
+    public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBookingCommand>
+    {
+        public CreateBookingCommandValidator()
+        {
+            RuleFor(command => command.ParkingLotId).NotEmpty();
+            RuleFor(command => command.ParkingSpotId).NotEmpty();
+            RuleFor(command => command.UserId).NotEmpty();
+
+            RuleFor(command => command.StartTime)
+                .GreaterThanOrEqualTo(_ => DateTime.UtcNow.AddMinutes(-1))
+                .WithMessage("Booking start must be now or in the future.");
+
+            RuleFor(command => command.EndTime)
+                .GreaterThan(command => command.StartTime)
+                .WithMessage("Booking end must be after its start.");
+
+            RuleFor(command => command.Notes)
+                .MaximumLength(2000);
         }
     }
 }

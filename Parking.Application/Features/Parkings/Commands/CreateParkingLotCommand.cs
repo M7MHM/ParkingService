@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Parking.Application.Interfaces;
 using ParkingBooking.Domain.Entities;
 using ParkingBooking.Domain.ValueObjects;
@@ -8,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Parking.Application.Features.Parking.Commands
+namespace Parking.Application.Features.Parkings.Commands
 {
     public record CreateParkingLotCommand(
         string Name,
@@ -47,6 +48,24 @@ namespace Parking.Application.Features.Parking.Commands
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return lot.Id;
+        }
+    }
+    public sealed class CreateParkingLotCommandValidator : AbstractValidator<CreateParkingLotCommand>
+    {
+        public CreateParkingLotCommandValidator()
+        {
+            RuleFor(command => command.Name).NotEmpty().MaximumLength(200);
+            RuleFor(command => command.Description).MaximumLength(1000);
+            RuleFor(command => command.TotalSpots).GreaterThan(0);
+
+            RuleFor(command => command.OpeningTime)
+                .GreaterThanOrEqualTo(TimeSpan.Zero)
+                .LessThan(TimeSpan.FromHours(24));
+
+            RuleFor(command => command.ClosingTime)
+                .GreaterThan(command => command.OpeningTime)
+                .WithMessage("Closing time must be later than opening time.")
+                .LessThanOrEqualTo(TimeSpan.FromHours(24));
         }
     }
 }

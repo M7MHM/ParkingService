@@ -27,8 +27,8 @@ namespace Parking.Infrastructure.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email.Value),
-                new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim(AuthClaims.Name, user.FullName),
+                new Claim(AuthClaims.Role, user.Role.ToString())
             };
             var secretKey = _configuration["Jwt:SecretKey"]
                 ?? throw new InvalidOperationException("Jwt:SecretKey is missing in appsettings.json");

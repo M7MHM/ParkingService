@@ -6,31 +6,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Parking.Application.Features.Parking.Commands
+namespace Parking.Application.Features.Parkings.Commands
 {
-    public record ReserveSpotCommand(
+    public record ReleaseSpotCommand(
         Guid ParkingLotId,
-        Guid SpotId,
-        Guid BookingId,
-        DateTime ReservedUntil
+        Guid SpotId
     ) : IRequest;
-    public class ReserveSpotCommandHandler : IRequestHandler<ReserveSpotCommand>
+
+    public class ReleaseSpotCommandHandler : IRequestHandler<ReleaseSpotCommand>
     {
         private readonly IParkingLotRepository _lotRepository;
         private readonly IUnitOfWork _unitOfWork;
-        public ReserveSpotCommandHandler(
+        public ReleaseSpotCommandHandler(
             IParkingLotRepository lotRepository,
             IUnitOfWork unitOfWork)
         {
             _lotRepository = lotRepository;
             _unitOfWork = unitOfWork;
         }
-        public async Task Handle(ReserveSpotCommand request, CancellationToken cancellationToken)
+        public async Task Handle(ReleaseSpotCommand request, CancellationToken cancellationToken)
         {
             var lot = await _lotRepository.GetByIdWithSpotsAsync(request.ParkingLotId, cancellationToken)
                 ?? throw new InvalidOperationException("Parking lot not found.");
 
-            lot.ReserveSpot(request.SpotId, request.BookingId, request.ReservedUntil);
+            lot.ReleaseSpot(request.SpotId);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }

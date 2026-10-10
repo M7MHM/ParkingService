@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Parking.Application.Features.Parking.Queries
+namespace Parking.Application.Features.Parkings.Queries
 {
 
     public record GetParkingLotByIdQuery(Guid Id) : IRequest<ParkingLotResponse?>;

@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Parking.Application.Interfaces;
 using Parking.Domain.Enums;
 using Parking.Domain.Exceptions;
@@ -48,5 +49,28 @@ namespace Parking.Application.Features.Auth.Commands
 
             return new LoginResponse(token, expiresAt, user.Id, user.FullName, user.Role);
         }
+    }
+    public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
+    {
+        private const int MaximumPasswordLength = 128;
+        public LoginCommandValidator()
+        {
+            RuleFor(command => command.Email)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty()
+                .EmailAddress()
+                .MaximumLength(255);
+
+            RuleFor(command => command.Password)
+                .Cascade(CascadeMode.Stop)
+                .NotNull()
+                .Must(password => !string.IsNullOrEmpty(password))
+                .WithMessage("Password is required.")
+                .Must(password => password is not null &&
+                                  CountUnicodeCodePoints(password) <= MaximumPasswordLength)
+                .WithMessage($"Password cannot contain more than {MaximumPasswordLength} characters.");
+        }
+        private static int CountUnicodeCodePoints(string value) =>
+            value.EnumerateRunes().Count();
     }
 }
