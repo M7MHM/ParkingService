@@ -19,7 +19,7 @@ public class ParkingLot : BaseEntity
     private readonly List<ParkingSpot> _spots = new();
     public IReadOnlyCollection<ParkingSpot> Spots => _spots.AsReadOnly();
 
-    private ParkingLot() { } 
+    private ParkingLot() { }
 
     public ParkingLot(
         string name,
@@ -31,18 +31,29 @@ public class ParkingLot : BaseEntity
         TimeSpan closingTime)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Parking lot name is required", nameof(name));
+            throw new ArgumentException(
+                "Parking lot name is required",
+                nameof(name));
+
+        ArgumentNullException.ThrowIfNull(location);
+        ArgumentNullException.ThrowIfNull(hourlyRate);
 
         if (totalSpots <= 0)
-            throw new ArgumentException("Total spots must be greater than zero.", nameof(totalSpots));
+            throw new ArgumentException(
+                "Total spots must be greater than zero.",
+                nameof(totalSpots));
 
         if (hourlyRate.Amount < 0)
-            throw new ArgumentException("Hourly rate cannot be negative.", nameof(hourlyRate));
+            throw new ArgumentException(
+                "Hourly rate cannot be negative.",
+                nameof(hourlyRate));
 
-        if (openingTime < TimeSpan.Zero || openingTime >= TimeSpan.FromHours(24))
+        if (openingTime < TimeSpan.Zero ||
+            openingTime >= TimeSpan.FromHours(24))
             throw new ArgumentOutOfRangeException(nameof(openingTime));
 
-        if (closingTime <= openingTime || closingTime > TimeSpan.FromHours(24))
+        if (closingTime <= openingTime ||
+            closingTime > TimeSpan.FromHours(24))
             throw new ArgumentOutOfRangeException(nameof(closingTime));
 
         Name = name;
@@ -55,22 +66,45 @@ public class ParkingLot : BaseEntity
         OpeningTime = openingTime;
         ClosingTime = closingTime;
     }
-
-    public void UpdateDetails(string name, string description, Money hourlyRate)
+    public void UpdateDetails(
+        string name,
+        string description,
+        Money hourlyRate)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Parking lot name is required", nameof(name));
+            throw new ArgumentException(
+                "Parking lot name is required",
+                nameof(name));
+
+        ArgumentNullException.ThrowIfNull(hourlyRate);
 
         Name = name;
         Description = description;
         HourlyRate = hourlyRate;
         UpdateTimestamp();
     }
-
     public void AddSpot(ParkingSpot spot)
     {
+        ArgumentNullException.ThrowIfNull(spot);
+
+        if (spot.ParkingLotId != Id)
+            throw new InvalidOperationException(
+                "The parking spot belongs to a different parking lot.");
+
+        if (_spots.Any(existing =>
+                existing.Id == spot.Id ||
+                string.Equals(
+                    existing.SpotNumber,
+                    spot.SpotNumber,
+                    StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException(
+                "A spot with this ID or number already exists in this parking lot.");
+        }
+
         if (_spots.Count >= TotalSpots)
-            throw new InvalidOperationException("Maximum number of spots reached.");
+            throw new InvalidOperationException(
+                "Maximum number of spots reached.");
 
         _spots.Add(spot);
 
@@ -79,40 +113,38 @@ public class ParkingLot : BaseEntity
 
         UpdateTimestamp();
     }
-
     public void RemoveSpot(Guid spotId)
     {
         var spot = GetSpotOrThrow(spotId);
 
         if (spot.Status != SpotStatus.Available)
-            throw new InvalidOperationException("Cannot remove a reserved or occupied spot.");
+            throw new InvalidOperationException(
+                "Cannot remove a reserved or occupied spot.");
 
         _spots.Remove(spot);
         AvailableSpotsCount--;
         UpdateTimestamp();
     }
-
-    public void ReserveSpot(Guid spotId, Guid bookingId, DateTime reservedUntil)
+    public void ReserveSpot(
+        Guid spotId,
+        Guid bookingId,
+        DateTime reservedUntil)
     {
         var spot = GetSpotOrThrow(spotId);
-
-        spot.Reserve(bookingId, reservedUntil); 
+        spot.Reserve(bookingId, reservedUntil);
 
         AvailableSpotsCount--;
         UpdateTimestamp();
     }
-
-
     public void ReleaseSpot(Guid spotId)
     {
         var spot = GetSpotOrThrow(spotId);
 
-        spot.Release(); 
+        spot.Release();
 
         AvailableSpotsCount++;
         UpdateTimestamp();
     }
-
     public void MarkSpotOccupied(Guid spotId)
     {
         var spot = GetSpotOrThrow(spotId);
@@ -133,17 +165,23 @@ public class ParkingLot : BaseEntity
         spot.CompleteMaintenance();
         UpdateTimestamp();
     }
-
-    public void Activate() => IsActive = true;
-    public void Deactivate() => IsActive = false;
-
+    public void Activate()
+    {
+        IsActive = true;
+        UpdateTimestamp();
+    }
+    public void Deactivate()
+    {
+        IsActive = false;
+        UpdateTimestamp();
+    }
     public bool IsOpenAt(DateTime dateTime)
     {
         var timeOfDay = dateTime.TimeOfDay;
-
-        return IsActive && timeOfDay >= OpeningTime && timeOfDay <= ClosingTime;
+        return IsActive &&
+               timeOfDay >= OpeningTime &&
+               timeOfDay <= ClosingTime;
     }
-
     private ParkingSpot GetSpotOrThrow(Guid spotId)
     {
         var spot = _spots.FirstOrDefault(s => s.Id == spotId);

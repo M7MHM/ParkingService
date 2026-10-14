@@ -55,7 +55,7 @@ namespace Parking.Application.Features.Auth.Commands
     }
     public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     {
-        private const int MinimumPasswordLength = 15;
+        private const int MinimumPasswordLength = 8;
         private const int MaximumPasswordLength = 128;
         public RegisterCommandValidator()
         {

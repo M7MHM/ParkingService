@@ -14,12 +14,9 @@ public class ParkingSpot : BaseEntity
     public Money HourlyRate { get; private set; } = null!;
     public Guid ParkingLotId { get; private set; }
     public ParkingLot ParkingLot { get; private set; } = null!;
-
     public Guid? CurrentBookingId { get; private set; }
     public DateTime? ReservedUntil { get; private set; }
-
-    private ParkingSpot() { } 
-
+    private ParkingSpot() { }
     public ParkingSpot(
         string spotNumber,
         SpotType type,
@@ -27,10 +24,22 @@ public class ParkingSpot : BaseEntity
         Guid parkingLotId)
     {
         if (string.IsNullOrWhiteSpace(spotNumber))
-            throw new ArgumentException("Spot number is required.", nameof(spotNumber));
+            throw new ArgumentException(
+                "Spot number is required.",
+                nameof(spotNumber));
+
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(hourlyRate);
+
+        if (parkingLotId == Guid.Empty)
+            throw new ArgumentException(
+                "Parking lot ID is required.",
+                nameof(parkingLotId));
 
         if (hourlyRate.Amount < 0)
-            throw new ArgumentException("Amount cannot be negative.", nameof(hourlyRate));
+            throw new ArgumentException(
+                "Amount cannot be negative.",
+                nameof(hourlyRate));
 
         SpotNumber = spotNumber;
         Type = type;
@@ -44,28 +53,37 @@ public class ParkingSpot : BaseEntity
             throw new SpotNotAvailableException(Id);
 
         if (reservedUntil <= DateTime.UtcNow)
-            throw new ArgumentException("Reservation end date must be in the future.", nameof(reservedUntil));
+            throw new ArgumentException(
+                "Reservation end date must be in the future.",
+                nameof(reservedUntil));
 
         Status = SpotStatus.Reserved;
         CurrentBookingId = bookingId;
         ReservedUntil = reservedUntil;
 
-        AddDomainEvent(new ParkingSpotReservedEvent(Id, bookingId, reservedUntil));
+        AddDomainEvent(
+            new ParkingSpotReservedEvent(Id, bookingId, reservedUntil));
 
         UpdateTimestamp();
     }
     internal void MarkAsOccupied()
     {
         if (Status != SpotStatus.Reserved)
-            throw new InvalidOperationException("Cannot mark spot as occupied unless it is reserved.");
+            throw new InvalidOperationException(
+                "Cannot mark spot as occupied unless it is reserved.");
 
         Status = SpotStatus.Occupied;
         UpdateTimestamp();
     }
+
     internal void Release()
     {
-        if (Status == SpotStatus.Available)
-            throw new InvalidOperationException("Spot is already available.");
+        // AUDIT-FIX 4: only an active reservation/occupancy may be released.
+        if (Status is not (SpotStatus.Reserved or SpotStatus.Occupied))
+        {
+            throw new InvalidOperationException(
+                $"Cannot release a spot while it is {Status}.");
+        }
 
         var previousBookingId = CurrentBookingId;
 
@@ -73,54 +91,62 @@ public class ParkingSpot : BaseEntity
         CurrentBookingId = null;
         ReservedUntil = null;
 
-        AddDomainEvent(new ParkingSpotReleasedEvent(Id, previousBookingId));
+        AddDomainEvent(
+            new ParkingSpotReleasedEvent(Id, previousBookingId));
 
         UpdateTimestamp();
     }
     internal void SetMaintenance()
     {
         if (Status is SpotStatus.Occupied or SpotStatus.Reserved)
-            throw new InvalidOperationException("Cannot put a reserved or occupied spot under maintenance.");
+        {
+            throw new InvalidOperationException(
+                "Cannot put a reserved or occupied spot under maintenance.");
+        }
 
         Status = SpotStatus.Maintenance;
         UpdateTimestamp();
     }
-
     internal void CompleteMaintenance()
     {
         if (Status != SpotStatus.Maintenance)
-            throw new InvalidOperationException("Number of hours must be greater than zero.");
+            throw new InvalidOperationException(
+                "Spot is not currently under maintenance.");
 
         Status = SpotStatus.Available;
         UpdateTimestamp();
     }
-
     public Money CalculatePrice(int hours)
     {
         if (hours <= 0)
-            throw new ArgumentException("Total Hours must be greater than zero.", nameof(hours));
+            throw new ArgumentException(
+                "Total hours must be greater than zero.",
+                nameof(hours));
 
         return HourlyRate.Multiply(hours);
     }
+    public bool IsCurrentlyAvailable() =>
+        Status == SpotStatus.Available;
 
-    public bool IsCurrentlyAvailable() => Status == SpotStatus.Available;
-
-    public bool IsReservationExpired()
-    {
-        return Status == SpotStatus.Reserved &&
-               ReservedUntil.HasValue &&
-               ReservedUntil.Value <= DateTime.UtcNow;
-    }
+    public bool IsReservationExpired() =>
+        Status == SpotStatus.Reserved &&
+        ReservedUntil.HasValue &&
+        ReservedUntil.Value <= DateTime.UtcNow;
     public void UpdateType(SpotType newType)
     {
+        ArgumentNullException.ThrowIfNull(newType);
+
         Type = newType;
         UpdateTimestamp();
     }
-
     public void UpdateRate(Money newRate)
     {
+        ArgumentNullException.ThrowIfNull(newRate);
+
         if (newRate.Amount < 0)
-            throw new ArgumentException("Amount cannot be negative.", nameof(newRate));
+            throw new ArgumentException(
+                "Amount cannot be negative.",
+                nameof(newRate));
 
         HourlyRate = newRate;
         UpdateTimestamp();

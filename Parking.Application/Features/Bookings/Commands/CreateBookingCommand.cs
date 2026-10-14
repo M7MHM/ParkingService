@@ -2,6 +2,8 @@
 using MediatR;
 using Parking.Application.Interfaces;
 using Parking.Domain.Entities;
+using Parking.Domain.Exceptions;
+using ParkingBooking.Domain.Exceptions;
 using ParkingBooking.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -40,14 +42,14 @@ namespace Parking.Application.Features.Bookings.Commands
         public async Task<Guid> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
         {
             var lot = await _lotRepository.GetByIdWithSpotsAsync(request.ParkingLotId, cancellationToken)
-                    ??throw new InvalidOperationException("Parking lot not found.");
+                ?? throw new EntityNotFoundException("ParkingLot", request.ParkingLotId);
             if (!lot.IsOpenAt(request.StartTime))
                 throw new InvalidOperationException("The parking lot is closed at the requested time.");
 
             var period = new BookingPeriod(request.StartTime, request.EndTime);
 
             var spot = lot.Spots.FirstOrDefault(s => s.Id == request.ParkingSpotId)
-                ?? throw new InvalidOperationException("The parking spot does not exist in this lot.");
+                ?? throw new SpotNotFoundException(request.ParkingSpotId);
 
             var totalPrice = spot.CalculatePrice(period.WholeHoursCeiling());
             var booking = new Booking(
