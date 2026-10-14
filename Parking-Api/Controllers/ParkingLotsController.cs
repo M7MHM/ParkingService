@@ -68,21 +68,21 @@ namespace Parking_Api.Controllers
         }
     }
     public sealed record CreateParkingLotRequest(
-        string Name,
-        string Description,
-        [property: Required] double? Latitude,
-        [property: Required] double? Longitude,
+        [param: Required] string Name,
+        [param: Required] string Description,
+        [param: Required] double? Latitude,
+        [param: Required] double? Longitude,
         string? Address,
-        [property: Required] decimal? HourlyRateAmount,
-        [property: Required] int? TotalSpots,
-        [property: Required] TimeSpan? OpeningTime,
-        [property: Required] TimeSpan? ClosingTime,
+        [param: Required] decimal? HourlyRateAmount,
+        [param: Required] int? TotalSpots,
+        [param: Required] TimeSpan? OpeningTime,
+        [param: Required] TimeSpan? ClosingTime,
         string Currency = "EGP");
 
     public sealed record AddSpotRequest(
         string SpotNumber,
-        [property: Required] SpotSize? Size,
-        [property: Required] decimal? HourlyRateAmount,
+        [param: Required] SpotSize? Size,
+        [param: Required] decimal? HourlyRateAmount,
         string Currency = "EGP",
         bool HasElectricCharger = false,
         bool IsCovered = false,
