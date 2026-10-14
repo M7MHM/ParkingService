@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Parking.Application.Interfaces;
+using Parking.Domain.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Parking.Application.Features.Parkings.Commands
         public async Task Handle(ReleaseSpotCommand request, CancellationToken cancellationToken)
         {
             var lot = await _lotRepository.GetByIdWithSpotsAsync(request.ParkingLotId, cancellationToken)
-                ?? throw new InvalidOperationException("Parking lot not found.");
+                ?? throw new EntityNotFoundException("ParkingLot", request.ParkingLotId);
 
             lot.ReleaseSpot(request.SpotId);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

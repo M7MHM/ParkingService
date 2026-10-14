@@ -13,6 +13,13 @@ public sealed class Money : IEquatable<Money>
         if (string.IsNullOrWhiteSpace(currency))
             throw new ArgumentException(" Currency is required.", nameof(currency));
 
+        var normalizedCurrency = currency.Trim().ToUpperInvariant();
+        if (normalizedCurrency.Length != 3 || normalizedCurrency.Any(character => character < 'A' || character > 'Z'))
+        {
+            throw new ArgumentException(
+                "Currency must be a three-letter ASCII code.",
+                nameof(currency));
+        }
         Amount = amount;
         Currency = currency.ToUpper();
     }

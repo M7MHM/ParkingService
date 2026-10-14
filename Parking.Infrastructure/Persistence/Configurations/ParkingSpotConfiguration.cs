@@ -9,12 +9,11 @@ using System.Threading.Tasks;
 
 namespace Parking.Infrastructure.Persistence.Configurations
 {
-    public class ParkingSpotConfiguration : IEntityTypeConfiguration<ParkingSpot>
+    public class ParkingSpotConfiguration: IEntityTypeConfiguration<ParkingSpot>
     {
         public void Configure(EntityTypeBuilder<ParkingSpot> builder)
         {
             builder.ToTable("ParkingSpots");
-
             builder.HasKey(s => s.Id);
 
             builder.Property(s => s.SpotNumber)
@@ -23,10 +22,15 @@ namespace Parking.Infrastructure.Persistence.Configurations
 
             builder.OwnsOne(s => s.Type, type =>
             {
-                type.Property(t => t.Size).HasColumnName("SpotSize").HasConversion<string>();
-                type.Property(t => t.HasElectricCharger).HasColumnName("HasElectricCharger");
-                type.Property(t => t.IsCovered).HasColumnName("IsCovered");
-                type.Property(t => t.IsAccessible).HasColumnName("IsAccessible");
+                type.Property(t => t.Size)
+                    .HasColumnName("SpotSize")
+                    .HasConversion<string>();
+                type.Property(t => t.HasElectricCharger)
+                    .HasColumnName("HasElectricCharger");
+                type.Property(t => t.IsCovered)
+                    .HasColumnName("IsCovered");
+                type.Property(t => t.IsAccessible)
+                    .HasColumnName("IsAccessible");
             });
 
             builder.Property(s => s.Status)
@@ -35,8 +39,12 @@ namespace Parking.Infrastructure.Persistence.Configurations
 
             builder.OwnsOne(s => s.HourlyRate, money =>
             {
-                money.Property(m => m.Amount).HasColumnName("HourlyRateAmount").HasPrecision(18, 2);
-                money.Property(m => m.Currency).HasColumnName("HourlyRateCurrency").HasMaxLength(3);
+                money.Property(m => m.Amount)
+                    .HasColumnName("HourlyRateAmount")
+                    .HasPrecision(18, 2);
+                money.Property(m => m.Currency)
+                    .HasColumnName("HourlyRateCurrency")
+                    .HasMaxLength(3);
             });
 
             builder.Property(s => s.ParkingLotId);
@@ -47,6 +55,12 @@ namespace Parking.Infrastructure.Persistence.Configurations
             builder.Property(s => s.IsDeleted);
 
             builder.HasQueryFilter(s => !s.IsDeleted);
+
+            builder.HasIndex(s => new { s.ParkingLotId, s.SpotNumber })
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = 0")
+                .HasDatabaseName(
+                    "IX_ParkingSpots_ParkingLotId_SpotNumber_Active");
 
             builder.HasIndex(s => new { s.ParkingLotId, s.Status })
                 .HasDatabaseName("IX_ParkingSpots_LotId_Status");

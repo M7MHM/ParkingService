@@ -20,12 +20,15 @@ namespace Parking.Application.Features.Parkings.Commands
     {
         private readonly IParkingLotRepository _lotRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IParkingSpotRepository _spotRepository;
         public AddSpotCommandHandler(
             IParkingLotRepository lotRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IParkingSpotRepository spotRepository)
         {
             _lotRepository = lotRepository;
             _unitOfWork = unitOfWork;
+            _spotRepository = spotRepository;
         }
         public async Task<Guid> Handle(AddSpotCommand request, CancellationToken cancellationToken)
         {
@@ -40,6 +43,7 @@ namespace Parking.Application.Features.Parkings.Commands
             );
 
             lot.AddSpot(spot);
+            await _spotRepository.AddAsync(spot, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return spot.Id;

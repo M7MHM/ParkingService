@@ -68,10 +68,10 @@ namespace Parking_Api.Controllers
             Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out userId);
     }
     public sealed record CreateBookingRequest(
-        [property: Required] Guid? ParkingLotId,
-        [property: Required] Guid? ParkingSpotId,
-        [property: Required] DateTimeOffset? StartTime,
-        [property: Required] DateTimeOffset? EndTime,
+        [param: Required] Guid? ParkingLotId,
+        [param: Required] Guid? ParkingSpotId,
+        [param: Required] DateTimeOffset? StartTime,
+        [param: Required] DateTimeOffset? EndTime,
         string? Notes = null
     );
 }
