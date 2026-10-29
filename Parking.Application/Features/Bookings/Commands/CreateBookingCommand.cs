@@ -44,12 +44,12 @@ namespace Parking.Application.Features.Bookings.Commands
             var lot = await _lotRepository.GetByIdWithSpotsAsync(request.ParkingLotId, cancellationToken)
                 ?? throw new EntityNotFoundException("ParkingLot", request.ParkingLotId);
             if (!lot.IsOpenAt(request.StartTime))
-                throw new InvalidOperationException("The parking lot is closed at the requested time.");
+                throw new ParkingLotClosedException(lot.Id, request.StartTime);
 
             var period = new BookingPeriod(request.StartTime, request.EndTime);
 
             var spot = lot.Spots.FirstOrDefault(s => s.Id == request.ParkingSpotId)
-                ?? throw new SpotNotFoundException(request.ParkingSpotId);
+                ?? throw new EntityNotFoundException("ParkingSpot", request.ParkingSpotId);
 
             var totalPrice = spot.CalculatePrice(period.WholeHoursCeiling());
             var booking = new Booking(

@@ -9,7 +9,7 @@ public class InvalidBookingStatusTransitionException : DomainException
     public BookingStatus AttemptedStatus { get; }
 
     public InvalidBookingStatusTransitionException(Guid bookingId, BookingStatus currentStatus, BookingStatus attemptedStatus)
-        : base($"الحجز رقم {bookingId} حالته حاليًا {currentStatus}، مينفعش يتحول لـ {attemptedStatus}.")
+        : base($"Booking {bookingId} is currently in {currentStatus} status and cannot be transitioned to {attemptedStatus}.")
     {
         BookingId = bookingId;
         CurrentStatus = currentStatus;
@@ -22,7 +22,7 @@ public class BookingCannotBeCancelledException : DomainException
     public Guid BookingId { get; }
 
     public BookingCannotBeCancelledException(Guid bookingId)
-        : base($"الحجز رقم {bookingId} مينفعش يتلغي بعد ما فترته بدأت.")
+        : base($"Booking {bookingId} cannot be cancelled after its period has started.")
     {
         BookingId = bookingId;
     }

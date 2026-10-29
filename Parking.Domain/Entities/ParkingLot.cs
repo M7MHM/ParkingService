@@ -154,16 +154,26 @@ public class ParkingLot : BaseEntity
 
     public void SetSpotMaintenance(Guid spotId)
     {
-        var spot = GetSpotOrThrow(spotId);
+        var spot = GetSpotOrThrow(spotId); 
+        var wasAvailable = spot.IsCurrentlyAvailable();
+
         spot.SetMaintenance();
+
+        if (wasAvailable) 
+            AvailableSpotsCount--;
+
         UpdateTimestamp();
     }
 
     public void CompleteSpotMaintenance(Guid spotId)
     {
         var spot = GetSpotOrThrow(spotId);
+
         spot.CompleteMaintenance();
-        UpdateTimestamp();
+
+        AvailableSpotsCount++; 
+
+        UpdateTimestamp(); 
     }
     public void Activate()
     {
