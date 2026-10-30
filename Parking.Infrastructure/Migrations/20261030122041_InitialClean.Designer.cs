@@ -11,8 +11,8 @@ using Parking.Infrastructure.Persistence.Data;
 namespace Parking.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261010235419_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20261030122041_InitialClean")]
+    partial class InitialClean
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -175,6 +175,11 @@ namespace Parking.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParkingLotId", "SpotNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ParkingSpots_ParkingLotId_SpotNumber_Active")
+                        .HasFilter("\"IsDeleted\" = 0");
 
                     b.HasIndex("ParkingLotId", "Status")
                         .HasDatabaseName("IX_ParkingSpots_LotId_Status");

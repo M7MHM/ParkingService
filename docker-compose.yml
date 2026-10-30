@@ -1,0 +1,48 @@
+name: parking-app
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: parking-app-api:local
+    restart: unless-stopped
+
+    # Local machine only.
+    ports:
+      - "127.0.0.1:5000:8080"
+
+    environment:
+      # Intended for local development; do not expose Development publicly.
+      ASPNETCORE_ENVIRONMENT: "${APP_ENVIRONMENT:-Development}"
+
+      ConnectionStrings__DefaultConnection: "Data Source=/app/data/ParkingBooking.db"
+
+      Jwt__Issuer: "ParkingService"
+      Jwt__Audience: "ParkingService.Client"
+      Jwt__ExpiryMinutes: "60"
+      Jwt__SecretKey: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}"
+
+      # These names must match the keys read by DatabaseInitializer.
+      Seed__AdminEmail: "${SEED_ADMIN_EMAIL:-}"
+      Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-}"
+      Seed__AdminName: "${SEED_ADMIN_NAME:-Administrator}"
+
+    volumes:
+      - parking-data:/app/data
+
+    # TCP-only check; it does not verify database readiness.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  parking-data:

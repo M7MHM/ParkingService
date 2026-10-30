@@ -173,6 +173,11 @@ namespace Parking.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ParkingLotId", "SpotNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ParkingSpots_ParkingLotId_SpotNumber_Active")
+                        .HasFilter("\"IsDeleted\" = 0");
+
                     b.HasIndex("ParkingLotId", "Status")
                         .HasDatabaseName("IX_ParkingSpots_LotId_Status");
 

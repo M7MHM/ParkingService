@@ -1,0 +1,37 @@
+# Build output
+**/bin/
+**/obj/
+**/TestResults/
+
+# IDE files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+
+# Git metadata
+.git/
+**/.git/
+.gitignore
+.github/
+
+# Local SQLite files
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Local secrets/settings
+.env
+.env.*
+**/appsettings.*.local.json
+
+# Test projects
+Parking.Test/
+Parking.UnitTests/
+
+# Not needed in the image build context
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+**/*.md

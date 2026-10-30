@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Parking.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialClean : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -122,6 +122,13 @@ namespace Parking.Infrastructure.Migrations
                 name: "IX_ParkingSpots_LotId_Status",
                 table: "ParkingSpots",
                 columns: new[] { "ParkingLotId", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ParkingSpots_ParkingLotId_SpotNumber_Active",
+                table: "ParkingSpots",
+                columns: new[] { "ParkingLotId", "SpotNumber" },
+                unique: true,
+                filter: "\"IsDeleted\" = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
