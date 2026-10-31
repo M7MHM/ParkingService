@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Parking.Application.Features.Bookings.Commands
 {
-    public sealed record CompleteBookingCommand(Guid BookingId) : IRequest;
+    public sealed record CompleteBookingCommand(Guid BookingId) : ICacheInvalidatingRequest, IRequest;
     public sealed class CompleteBookingCommandHandler : IRequestHandler<CompleteBookingCommand>
     {
         private readonly IRepository<Booking> _bookings;

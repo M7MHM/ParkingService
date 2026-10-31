@@ -10,7 +10,13 @@ using System.Threading.Tasks;
 
 namespace Parking.Application.Features.Parkings.Queries
 {
-    public record GetAvailableSpotsQuery(Guid ParkingLotId) : IRequest<IReadOnlyList<ParkingSpotResponse>>;
+    public sealed record GetAvailableSpotsQuery(Guid ParkingLotId)
+        : ICacheableQuery<IReadOnlyList<ParkingSpotResponse>>
+    {
+        public string CacheKey => $"parking-lot:{ParkingLotId:D}:available-spots";
+        public TimeSpan CacheDuration => TimeSpan.FromSeconds(30);
+        public string? CacheGroup => $"LotGroup:{ParkingLotId:D}";
+    }
     public record ParkingSpotResponse(
         Guid Id,
         string SpotNumber,

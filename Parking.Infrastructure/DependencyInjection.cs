@@ -20,7 +20,8 @@ namespace Parking.Infrastructure
             IConfiguration configuration)
         {
             var connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? "Data Source=ParkingBooking.db";
+                ?? throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection must be configured.");
 
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
@@ -38,6 +39,17 @@ namespace Parking.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddDistributedMemoryCache();
+
+            var redisConnection = configuration.GetConnectionString("Redis");
+            if (!string.IsNullOrWhiteSpace(redisConnection))
+            {
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisConnection;
+                    options.InstanceName = "ParkingApp:";
+                });
+            }
 
             return services;
         }

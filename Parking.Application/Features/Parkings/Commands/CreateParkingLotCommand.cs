@@ -19,7 +19,7 @@ namespace Parking.Application.Features.Parkings.Commands
         int TotalSpots,
         TimeSpan OpeningTime,
         TimeSpan ClosingTime
-    ) : IRequest<Guid>;
+    ) : ICacheInvalidatingRequest, IRequest<Guid>;
 
     public class CreateParkingLotCommandHandler : IRequestHandler<CreateParkingLotCommand, Guid>
     {

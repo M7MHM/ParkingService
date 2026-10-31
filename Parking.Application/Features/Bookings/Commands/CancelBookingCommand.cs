@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Parking.Application.Features.Bookings.Commands
 {
-    public sealed record CancelBookingCommand(Guid BookingId, Guid RequestingUserId, bool IsAdmin) : IRequest;
+    public sealed record CancelBookingCommand(Guid BookingId, Guid RequestingUserId, bool IsAdmin) : ICacheInvalidatingRequest, IRequest;
     public sealed class CancelBookingCommandHandler : IRequestHandler<CancelBookingCommand>
     {
         private readonly IRepository<Booking> _bookings;

@@ -15,7 +15,7 @@ namespace Parking.Application.Features.Parkings.Commands
         string SpotNumber,
         SpotType Type,
         Money HourlyRate
-    ) : IRequest<Guid>;
+    ) : ICacheInvalidatingRequest, IRequest<Guid>;
     public class AddSpotCommandHandler : IRequestHandler<AddSpotCommand, Guid>
     {
         private readonly IParkingLotRepository _lotRepository;

@@ -11,8 +11,13 @@ using System.Threading.Tasks;
 namespace Parking.Application.Features.Parkings.Queries
 {
 
-    public record GetParkingLotByIdQuery(Guid Id) : IRequest<ParkingLotResponse?>;
-
+    public sealed record GetParkingLotByIdQuery(Guid Id)
+        : ICacheableQuery<ParkingLotResponse?>
+    {
+        public string CacheKey => $"parking-lot:{Id:D}";
+        public TimeSpan CacheDuration => TimeSpan.FromSeconds(30);
+        public string? CacheGroup => $"LotGroup:{Id:D}"; 
+    }
     public record ParkingLotResponse(
         Guid Id,
         string Name,

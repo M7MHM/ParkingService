@@ -21,7 +21,7 @@ namespace Parking.Application.Features.Bookings.Commands
            DateTime StartTime,
            DateTime EndTime,
            string? Notes
-       ) : IRequest<Guid>;
+       ) : ICacheInvalidatingRequest, IRequest<Guid>;
 
     public class CreateBookingCommandHandler : IRequestHandler<CreateBookingCommand, Guid>
     {
