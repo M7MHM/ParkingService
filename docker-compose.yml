@@ -24,6 +24,7 @@ services:
       Seed__AdminEmail: "${SEED_ADMIN_EMAIL:-}"
       Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-}"
       Seed__AdminName: "${SEED_ADMIN_NAME:-Administrator}"
+      Seed__DevData: "true"
     volumes:
       - parking-data:/app/data
     healthcheck:
