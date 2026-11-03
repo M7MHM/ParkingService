@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Parking.Infrastructure.Messaging;
 using Parking.Infrastructure.Persistence.Repositories;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace Parking.Infrastructure.Persistence.Data
                 .UseSqlite("Data Source=../Parking-Api/ParkingBooking.db")
                 .Options;
 
-            return new AppDbContext(options, new DomainEventDispatcher());
+            return new AppDbContext(options, new NoOpDomainEventDispatcher());
         }
     }
 }

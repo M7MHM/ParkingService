@@ -319,7 +319,7 @@ namespace Parking.Infrastructure.Persistence.Data
         {
             foreach (var chunk in items.Chunk(chunkSize))
             {
-                db.Set<T>().AddRange(chunk);
+                db.Set<T>().AddRange(chunk); 
                 await db.SaveChangesAsync(ct);
 
                 db.ChangeTracker.Clear();

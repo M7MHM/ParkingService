@@ -10,6 +10,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "127.0.0.1:5000:8080"
     environment:
@@ -25,6 +27,11 @@ services:
       Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-}"
       Seed__AdminName: "${SEED_ADMIN_NAME:-Administrator}"
       Seed__DevData: "true"
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__Port: "5672"
+      RabbitMq__VirtualHost: "/"
+      RabbitMq__User: "${RABBITMQ_USER:-parking}"
+      RabbitMq__Password: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
     volumes:
       - parking-data:/app/data
     healthcheck:
@@ -38,10 +45,40 @@ services:
     cap_drop:
       - ALL
 
+  notification:
+    build:
+      context: .
+      dockerfile: Dockerfile.notification
+    image: parking-app-notification:local
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__Port: "5672"
+      RabbitMq__VirtualHost: "/"
+      RabbitMq__User: "${RABBITMQ_USER:-parking}"
+      RabbitMq__Password: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
+      Redis__ConnectionString: "redis:6379,abortConnect=false,connectRetry=1,connectTimeout=1000,syncTimeout=750,asyncTimeout=750"
+      Smtp__Host: "mailpit"
+      Smtp__Port: "1025"
+      Smtp__From: "no-reply@parking.local"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -49,5 +86,31 @@ services:
       retries: 10
       start_period: 5s
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-parking}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
 volumes:
   parking-data:
+  rabbitmq-data:

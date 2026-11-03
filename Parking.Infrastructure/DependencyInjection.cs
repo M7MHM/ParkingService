@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Parking.Application.Interfaces;
+using Parking.Infrastructure.Messaging;
 using Parking.Infrastructure.Persistence.Data;
 using Parking.Infrastructure.Persistence.Repositories;
 using Parking.Infrastructure.Services;
@@ -24,6 +25,7 @@ namespace Parking.Infrastructure
                     "ConnectionStrings:DefaultConnection must be configured.");
 
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+            services.AddMessaging(configuration);
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(connectionString));

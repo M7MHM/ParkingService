@@ -5,7 +5,7 @@ public class BookingCreatedEvent
     public Guid ParkingSpotId { get; }
     public Guid UserId { get; }
     public DateTime OccurredOn { get; }
-
+    public Guid EventId { get; } = Guid.NewGuid();
     public BookingCreatedEvent(Guid bookingId, Guid parkingSpotId, Guid userId)
     {
         BookingId = bookingId;
@@ -19,7 +19,7 @@ public class BookingConfirmedEvent
     public Guid BookingId { get; }
     public Guid ParkingSpotId { get; }
     public DateTime OccurredOn { get; }
-
+    public Guid EventId { get; } = Guid.NewGuid();
     public BookingConfirmedEvent(Guid bookingId, Guid parkingSpotId)
     {
         BookingId = bookingId;
@@ -32,7 +32,7 @@ public class BookingCancelledEvent
     public Guid BookingId { get; }
     public Guid ParkingSpotId { get; }
     public DateTime OccurredOn { get; }
-
+    public Guid EventId { get; } = Guid.NewGuid();
     public BookingCancelledEvent(Guid bookingId, Guid parkingSpotId)
     {
         BookingId = bookingId;
@@ -45,7 +45,7 @@ public class BookingCompletedEvent
     public Guid BookingId { get; }
     public Guid ParkingSpotId { get; }
     public DateTime OccurredOn { get; }
-
+    public Guid EventId { get; } = Guid.NewGuid();
     public BookingCompletedEvent(Guid bookingId, Guid parkingSpotId)
     {
         BookingId = bookingId;

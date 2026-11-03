@@ -15,8 +15,7 @@ namespace Parking.Infrastructure.Persistence.Data
     public class AppDbContext : DbContext
     {
         private readonly IDomainEventDispatcher _eventDispatcher;
-        public AppDbContext(
-            DbContextOptions<AppDbContext> options,
+        public AppDbContext( DbContextOptions<AppDbContext> options,
             IDomainEventDispatcher eventDispatcher) : base(options)
         {
             _eventDispatcher = eventDispatcher;
@@ -26,43 +25,51 @@ namespace Parking.Infrastructure.Persistence.Data
         public DbSet<ParkingSpot> ParkingSpots => Set<ParkingSpot>();
         public DbSet<Booking> Bookings => Set<Booking>();
         public DbSet<User> Users => Set<User>();
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            var (entities, events) = CollectDomainEvents(); 
 
-            var result = await base.SaveChangesAsync(cancellationToken); 
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+            SaveChangesAsync(acceptAllChangesOnSuccess: true, cancellationToken: cancellationToken);
+
+        public override async Task<int> SaveChangesAsync(
+            bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default)
+        {
+            var (entities, domainEvents) = CollectDomainEvents();
+
+            foreach (var domainEvent in domainEvents)
+                await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+
+            var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
             foreach (var entity in entities)
-                entity.ClearDomainEvents(); 
-
-            foreach (var domainEvent in events)
-            {
-                await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken); 
-            }
+                entity.ClearDomainEvents();
 
             return result;
         }
-        public override int SaveChanges()
+
+        public override int SaveChanges() =>
+            SaveChanges(acceptAllChangesOnSuccess: true);
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
-            var (entities, events) = CollectDomainEvents(); 
+            var (entities, domainEvents) = CollectDomainEvents();
 
-            var result = base.SaveChanges();
-
-            foreach (var entity in entities)
-                entity.ClearDomainEvents(); 
-
-            foreach (var domainEvent in events)
-            {
+            foreach (var domainEvent in domainEvents)
                 _eventDispatcher.DispatchAsync(domainEvent, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
-            }
+
+            var result = base.SaveChanges(acceptAllChangesOnSuccess);
+
+            foreach (var entity in entities)
+                entity.ClearDomainEvents();
+
             return result;
         }
         private (List<BaseEntity> Entities, List<object> Events) CollectDomainEvents()

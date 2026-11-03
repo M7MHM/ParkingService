@@ -38,15 +38,18 @@ namespace Parking.Application.Features.Bookings.Commands
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
         }
-
         public async Task<Guid> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
         {
+            var startTimeUtc = NormalizeUtc(request.StartTime);
+            var endTimeUtc = NormalizeUtc(request.EndTime);
+
             var lot = await _lotRepository.GetByIdWithSpotsAsync(request.ParkingLotId, cancellationToken)
                 ?? throw new EntityNotFoundException("ParkingLot", request.ParkingLotId);
-            if (!lot.IsOpenAt(request.StartTime))
-                throw new ParkingLotClosedException(lot.Id, request.StartTime);
 
-            var period = new BookingPeriod(request.StartTime, request.EndTime);
+            if (!lot.IsOpenAt(startTimeUtc))
+                throw new ParkingLotClosedException(lot.Id, startTimeUtc);
+
+            var period = new BookingPeriod(startTimeUtc, endTimeUtc);
 
             var spot = lot.Spots.FirstOrDefault(s => s.Id == request.ParkingSpotId)
                 ?? throw new EntityNotFoundException("ParkingSpot", request.ParkingSpotId);
@@ -61,7 +64,7 @@ namespace Parking.Application.Features.Bookings.Commands
             );
             await _bookingRepository.AddAsync(booking, cancellationToken);
 
-            lot.ReserveSpot(request.ParkingSpotId, booking.Id, request.EndTime);
+            lot.ReserveSpot(request.ParkingSpotId, booking.Id, endTimeUtc);
 
             booking.Confirm();
 
@@ -69,6 +72,15 @@ namespace Parking.Application.Features.Bookings.Commands
 
             return booking.Id;
         }
+
+        private static DateTime NormalizeUtc(DateTime value) => value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            DateTimeKind.Unspecified => throw new ValidationException(
+                "Booking timestamps must include a timezone, such as Z or +02:00."),
+            _ => throw new ValidationException("Unsupported booking timestamp.")
+        };
     }
     public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBookingCommand>
     {
@@ -79,12 +91,17 @@ namespace Parking.Application.Features.Bookings.Commands
             RuleFor(command => command.UserId).NotEmpty();
 
             RuleFor(command => command.StartTime)
-                .GreaterThanOrEqualTo(_ => DateTime.UtcNow.AddMinutes(-1))
-                .WithMessage("Booking start must be now or in the future.");
+                            .Must(value =>
+                                value.Kind != DateTimeKind.Unspecified &&
+                                value.ToUniversalTime() >= DateTime.UtcNow.AddMinutes(-1))
+                            .WithMessage("Booking start must include a timezone and be now or in the future.");
 
             RuleFor(command => command.EndTime)
-                .GreaterThan(command => command.StartTime)
-                .WithMessage("Booking end must be after its start.");
+                .Must((command, endTime) =>
+                    endTime.Kind != DateTimeKind.Unspecified &&
+                    command.StartTime.Kind != DateTimeKind.Unspecified &&
+                    endTime.ToUniversalTime() > command.StartTime.ToUniversalTime())
+                .WithMessage("Booking end must include a timezone and be after its start.");
 
             RuleFor(command => command.Notes)
                 .MaximumLength(2000);
