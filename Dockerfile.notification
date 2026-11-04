@@ -1,19 +1,16 @@
 # syntax=docker/dockerfile:1
+ARG DOTNET_VERSION=8.0
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
 COPY . .
-
-RUN --mount=type=cache,id=parking-nuget,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore Parking.Notification/Parking.Notification.csproj \
-    && dotnet publish Parking.Notification/Parking.Notification.csproj \
-      --configuration $BUILD_CONFIGURATION \
-      --output /app/publish \
-      --no-restore \
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish Parking.Notification/Parking.Notification.csproj \
+      -c Release \
+      -o /app/publish \
       /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+FROM mcr.microsoft.com/dotnet/runtime:${DOTNET_VERSION} AS final
 WORKDIR /app
 COPY --from=build /app/publish/ ./
 USER $APP_UID

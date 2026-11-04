@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Parking.Application;
@@ -13,6 +14,19 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var behindProxy = builder.Configuration.GetValue<bool>("Proxy:Enabled");
+if (behindProxy)
+{
+    var trustedProxyIp = builder.Configuration["Proxy:TrustedProxyIp"]
+        ?? throw new InvalidOperationException("Set Proxy:TrustedProxyIp when Proxy:Enabled is true.");
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownProxies.Add(System.Net.IPAddress.Parse(trustedProxyIp));
+    });
+}
 
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
@@ -37,6 +51,8 @@ builder.Services
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+builder.Services.AddHealthChecks();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -95,20 +111,32 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (behindProxy)
+    app.UseForwardedHeaders();
+
 app.UseMiddleware<ApiExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    await DatabaseInitializer.InitializeAsync(app.Services);
+}
 
 if (app.Environment.IsDevelopment())
 {
-    await DatabaseInitializer.InitializeAsync(app.Services);
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!behindProxy)
+    app.UseHttpsRedirection();
+
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 
 app.Run();

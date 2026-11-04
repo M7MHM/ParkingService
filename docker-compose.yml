@@ -1,99 +1,130 @@
 name: parking-app
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: parking-app-api:local
+  caddy:
+    image: caddy:2
     restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    <<: *hardening
+    cap_add:
+      - NET_BIND_SERVICE
     ports:
-      - "127.0.0.1:5000:8080"
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     environment:
-      ASPNETCORE_ENVIRONMENT: "${APP_ENVIRONMENT:-Development}"
+      DOMAIN: "${DOMAIN:?Set DOMAIN in .env}"
+      ACME_EMAIL: "${ACME_EMAIL:-admin@example.com}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      proxy:
+        ipv4_address: 172.30.0.2
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *default-logging
+
+  api:
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER in .env}/parking-api:${IMAGE_TAG:?Set IMAGE_TAG in .env}
+    restart: unless-stopped
+    <<: *hardening
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      Proxy__Enabled: "true"
+      Proxy__TrustedProxyIp: "172.30.0.2"
+      Database__MigrateOnStartup: "true"
       ConnectionStrings__DefaultConnection: "Data Source=/app/data/ParkingBooking.db"
-      ConnectionStrings__Redis: "redis:6379,abortConnect=false,connectRetry=1,connectTimeout=1000,syncTimeout=750,asyncTimeout=750"
-      Logging__LogLevel__Parking.Application.Behaviors.CacheBehavior: "Debug"
-      Jwt__Issuer: "ParkingService"
-      Jwt__Audience: "ParkingService.Client"
-      Jwt__ExpiryMinutes: "60"
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false,connectTimeout=1000,syncTimeout=1000,asyncTimeout=1000"
+      Jwt__Issuer: "${JWT_ISSUER:-ParkingService}"
+      Jwt__Audience: "${JWT_AUDIENCE:-ParkingService.Client}"
+      Jwt__ExpiryMinutes: "${JWT_EXPIRY_MINUTES:-60}"
       Jwt__SecretKey: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}"
       Seed__AdminEmail: "${SEED_ADMIN_EMAIL:-}"
       Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-}"
       Seed__AdminName: "${SEED_ADMIN_NAME:-Administrator}"
-      Seed__DevData: "true"
       RabbitMq__Host: "rabbitmq"
-      RabbitMq__Port: "5672"
-      RabbitMq__VirtualHost: "/"
-      RabbitMq__User: "${RABBITMQ_USER:-parking}"
+      RabbitMq__User: "${RABBITMQ_USER:?Set RABBITMQ_USER in .env}"
       RabbitMq__Password: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
     volumes:
       - parking-data:/app/data
+    networks:
+      - proxy
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
       interval: 15s
       timeout: 3s
       retries: 5
-      start_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+      start_period: 40s
+    mem_limit: 512m
+    logging: *default-logging
 
   notification:
-    build:
-      context: .
-      dockerfile: Dockerfile.notification
-    image: parking-app-notification:local
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER in .env}/parking-notification:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     restart: unless-stopped
+    <<: *hardening
     depends_on:
       rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mailpit:
-        condition: service_started
     environment:
       RabbitMq__Host: "rabbitmq"
-      RabbitMq__Port: "5672"
-      RabbitMq__VirtualHost: "/"
-      RabbitMq__User: "${RABBITMQ_USER:-parking}"
+      RabbitMq__User: "${RABBITMQ_USER:?Set RABBITMQ_USER in .env}"
       RabbitMq__Password: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
-      Redis__ConnectionString: "redis:6379,abortConnect=false,connectRetry=1,connectTimeout=1000,syncTimeout=750,asyncTimeout=750"
-      Smtp__Host: "mailpit"
-      Smtp__Port: "1025"
-      Smtp__From: "no-reply@parking.local"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+      Redis__ConnectionString: "redis:6379,abortConnect=false"
+      Smtp__Host: "${SMTP_HOST:?Set SMTP_HOST in .env}"
+      Smtp__Port: "${SMTP_PORT:-587}"
+      Smtp__From: "${SMTP_FROM:?Set SMTP_FROM in .env}"
+      Smtp__User: "${SMTP_USER:-}"
+      Smtp__Password: "${SMTP_PASSWORD:-}"
+      Smtp__UseSsl: "${SMTP_USE_SSL:-true}"
+    mem_limit: 256m
+    logging: *default-logging
+    networks:
+      - backend
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
-    ports:
-      - "127.0.0.1:6379:6379"
+    <<: *hardening
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "volatile-lru"]
+    volumes:
+      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 5s
+    mem_limit: 192m
+    logging: *default-logging
+    networks:
+      - backend
 
   rabbitmq:
     image: rabbitmq:4-management
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-parking}"
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:?Set RABBITMQ_USER in .env}"
       RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}"
     ports:
-      - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
@@ -102,15 +133,33 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 40s
+    mem_limit: 768m
+    logging: *default-logging
+    networks:
+      - backend
 
   mailpit:
     image: axllent/mailpit
+    profiles: ["mailpit"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:8025:8025"
-      - "127.0.0.1:1025:1025"
+    logging: *default-logging
+    networks:
+      - backend
 
 volumes:
   parking-data:
+  redis-data:
   rabbitmq-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  backend:
+    driver: bridge
