@@ -109,7 +109,15 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.OperationFilter<AuthorizeOperationFilter>();
 });
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") 
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 if (behindProxy)
@@ -132,6 +140,9 @@ if (!behindProxy)
     app.UseHttpsRedirection();
 
 app.UseRouting();
+
+app.UseCors("AllowFrontend");
+
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
